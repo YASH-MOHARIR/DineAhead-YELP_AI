@@ -1,6 +1,6 @@
 // components/PlanSummary.tsx
 import { useState } from 'react';
-import type { WeeklyPlanType, Filters, DayOfWeek, Restaurant } from '../types';
+import type { WeeklyPlanType, Filters, Restaurant } from '../types';
 import { DAYS, DAY_OFFSETS } from '../constants';
 import { getNextMonday, downloadCalendar } from '../utils/calendar';
 import RestaurantCard from './RestaurantCard';
@@ -26,12 +26,11 @@ interface PlanSummaryProps {
   plan: WeeklyPlanType;
   filters: Filters;
   onBack: () => void;
-  onEdit: () => void;
   onSave: (name: string) => void;
   onViewRestaurant: (restaurant: Restaurant) => void;
 }
 
-export default function PlanSummary({ plan, filters, onBack, onEdit, onSave, onViewRestaurant }: PlanSummaryProps) {
+export default function PlanSummary({ plan, filters, onBack, onSave, onViewRestaurant }: PlanSummaryProps) {
   const [copied, setCopied] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -75,7 +74,7 @@ export default function PlanSummary({ plan, filters, onBack, onEdit, onSave, onV
       await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
+    } catch {
       const textarea = document.createElement('textarea');
       textarea.value = text;
       textarea.style.position = 'fixed';
@@ -114,7 +113,7 @@ export default function PlanSummary({ plan, filters, onBack, onEdit, onSave, onV
         setSharing(true);
         setTimeout(() => setSharing(false), 2000);
       }
-    } catch (err) {
+    } catch {
       // Fallback handled silently
     }
   };

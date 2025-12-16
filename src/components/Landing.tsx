@@ -7,8 +7,7 @@ import {
   CalendarCheck,
   BookOpen,
   ArrowRight,
-  Sparkles,
-  MessageSquare
+  Sparkles
 } from 'lucide-react';
 
 interface LandingProps {
