@@ -1,5 +1,5 @@
 // constants.ts - App constants and options
-import type  { DietaryType, DayOfWeek } from './types';
+import type { DietaryType, DayOfWeek, MealTime } from './types';
 
 export const API_KEY = import.meta.env.VITE_YELP_API_KEY || 'YOUR_API_KEY_HERE';
 
@@ -23,19 +23,46 @@ export const CUISINE_OPTIONS = [
   'French', 'Greek', 'Middle Eastern'
 ];
 
-export const DAYS: DayOfWeek[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+export const DAYS: DayOfWeek[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+export const MEAL_TIMES: MealTime[] = ['breakfast', 'lunch', 'dinner'];
+
+export const DAY_LABELS: Record<DayOfWeek, { short: string; full: string }> = {
+  monday: { short: 'Mon', full: 'Monday' },
+  tuesday: { short: 'Tue', full: 'Tuesday' },
+  wednesday: { short: 'Wed', full: 'Wednesday' },
+  thursday: { short: 'Thu', full: 'Thursday' },
+  friday: { short: 'Fri', full: 'Friday' },
+  saturday: { short: 'Sat', full: 'Saturday' },
+  sunday: { short: 'Sun', full: 'Sunday' }
+};
+
+export const MEAL_ICONS: Record<MealTime, string> = {
+  breakfast: '🌅',
+  lunch: '☀️',
+  dinner: '🌙'
+};
 
 export const DAY_OFFSETS: Record<DayOfWeek, number> = {
   monday: 0,
   tuesday: 1,
   wednesday: 2,
   thursday: 3,
-  friday: 4
+  friday: 4,
+  saturday: 5,
+  sunday: 6
 };
 
 export const PRICE_MAP: Record<string, number> = {
   '$': 12,
   '$$': 22,
-  '$$$': 35,
+  '$$$': 38,
   '$$$$': 55
+};
+
+// Budget ranges for different meal times (used for smart suggestions)
+export const MEAL_PRICE_TARGETS: Record<MealTime, { min: number; ideal: number; max: number }> = {
+  breakfast: { min: 8, ideal: 12, max: 18 },
+  lunch: { min: 12, ideal: 20, max: 30 },
+  dinner: { min: 18, ideal: 32, max: 55 }
 };

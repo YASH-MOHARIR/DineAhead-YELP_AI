@@ -1,7 +1,8 @@
 // App.tsx - Main application component
 import { useState } from 'react';
-import type { AppStep, UserPreferences, Filters, WeeklyPlanType, SavedPlan, Restaurant } from './types';
-import { DAYS } from './constants';
+import type { AppStep, UserPreferences, Filters, WeeklyPlanType, SavedPlan, Restaurant, DayOfWeek, MealTime } from './types';
+import { createEmptyWeek, MEAL_BUDGET_TARGETS } from './types';
+import { DAYS, MEAL_TIMES } from './constants';
 import { getSavedPlans, savePlanToStorage } from './utils/storage';
 
 // Components
@@ -23,26 +24,31 @@ export default function App() {
   });
   const [filters, setFilters] = useState<Filters>({ 
     location: '02119', 
-    budget: 150, 
+    budget: 350, // Higher default for 21 meals
     distance: 5, 
     mealType: 'any' 
   });
-  const [plan, setPlan] = useState<WeeklyPlanType>({ 
-    monday: null, 
-    tuesday: null, 
-    wednesday: null, 
-    thursday: null, 
-    friday: null 
-  });
+  const [plan, setPlan] = useState<WeeklyPlanType>(createEmptyWeek());
   const [showSummary, setShowSummary] = useState(false);
   const [showSavedPlans, setShowSavedPlans] = useState(false);
   const [viewingRestaurant, setViewingRestaurant] = useState<Restaurant | null>(null);
 
-  // Check if plan has any restaurants
-  const hasPlan = DAYS.some(d => plan[d] !== null);
+  // Calculate if plan has any restaurants
+  const hasPlan = DAYS.some(d => 
+    MEAL_TIMES.some(m => plan[d][m] !== null)
+  );
   
   // Calculate total cost
-  const totalCost = DAYS.reduce((sum, d) => sum + (plan[d]?.restaurant.estimatedCost || 0), 0);
+  const totalCost = DAYS.reduce((sum, d) => {
+    return sum + MEAL_TIMES.reduce((mealSum, m) => {
+      return mealSum + (plan[d][m]?.restaurant.estimatedCost || 0);
+    }, 0);
+  }, 0);
+
+  // Count planned meals
+  const plannedMeals = DAYS.reduce((sum, d) => {
+    return sum + MEAL_TIMES.filter(m => plan[d][m] !== null).length;
+  }, 0);
 
   // Save plan handler
   const handleSavePlan = (name: string) => {
@@ -67,9 +73,9 @@ export default function App() {
     setStep('plan');
   };
 
-  // FIX: Navigate to planning view and ensure summary is hidden
+  // Navigate to planning view
   const handleStartPlanning = () => {
-    setShowSummary(false); // Ensure we show PlanningView, not Summary
+    setShowSummary(false);
     setStep('plan');
   };
 
@@ -96,7 +102,7 @@ export default function App() {
         <FiltersStep 
           filters={filters} 
           setFilters={setFilters} 
-          onNext={handleStartPlanning}  // FIX: Use new handler
+          onNext={handleStartPlanning}
           onBack={() => setStep('preferences')} 
         />
       )}
@@ -132,13 +138,18 @@ export default function App() {
         />
       )}
 
-      {/* Restaurant Detail Modal - available app-wide */}
+      {/* Restaurant Detail Modal */}
       {viewingRestaurant && (
         <RestaurantDetailModal
           restaurant={viewingRestaurant}
           onClose={() => setViewingRestaurant(null)}
-          onAddToDay={(day) => {
-            setPlan({ ...plan, [day]: { restaurant: viewingRestaurant, dishes: [] } });
+          onAddToDay={(day: DayOfWeek, meal: MealTime) => {
+            const newPlan = { ...plan };
+            newPlan[day] = { 
+              ...newPlan[day], 
+              [meal]: { restaurant: viewingRestaurant, mealTime: meal } 
+            };
+            setPlan(newPlan);
             setViewingRestaurant(null);
           }}
           preferences={preferences}

@@ -1,5 +1,5 @@
 // components/ChatAssistant.tsx
-import { useState, useRef, useEffect, DragEvent } from 'react';
+import { useEffect, useRef, useState, type DragEvent } from 'react';
 import type { ChatMessage, Restaurant, UserPreferences, Filters, WeeklyPlanType } from '../types'; 
 import RestaurantCard from './RestaurantCard';
 
@@ -17,17 +17,17 @@ interface ChatAssistantProps {
 }
 
 const QUICK_PROMPTS = [
-  { text: "Plan my whole week", icon: "📅" },
-  { text: "Find something spicy", icon: "🌶️" },
-  { text: "Healthy options", icon: "🥗" },
-  { text: "Surprise me!", icon: "✨" }
+  { text: "Plan Monday's meals", icon: "📅" },
+  { text: "Breakfast spots", icon: "🌅" },
+  { text: "Fancy dinner", icon: "🌙" },
+  { text: "Cheap lunch < $12", icon: "💰" }
 ];
 
 const FOLLOW_UP_PROMPTS = [
-  { text: "Show me more", icon: "➕" },
-  { text: "Something cheaper", icon: "💰" },
+  { text: "Show more options", icon: "➕" },
+  { text: "Something cheaper", icon: "💵" },
   { text: "Different cuisine", icon: "🍽️" },
-  { text: "Closer to me", icon: "📍" }
+  { text: "Plan another day", icon: "📅" }
 ];
 
 export default function ChatAssistant({ 
@@ -53,42 +53,42 @@ export default function ChatAssistant({
   const prompts = showFollowUps ? FOLLOW_UP_PROMPTS : QUICK_PROMPTS;
 
   return (
-    <div className="flex flex-col h-full glass rounded-2xl shadow-xl overflow-hidden">
+    <div className="flex flex-col h-full bg-white rounded-2xl shadow-xl overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-white/20 bg-white/50">
+      <div className="p-4 border-b bg-linear-to-r from-orange-50 to-rose-50">
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-gray-800 flex items-center gap-2">
             <span className="text-2xl animate-float">🤖</span> 
-            <span className="gradient-text">DineAhead Assistant</span>
+            <span className="bg-linear-to-r from-orange-600 to-rose-600 bg-clip-text text-transparent">
+              DineAhead Assistant
+            </span>
           </h3>
           {hasConversationContext && (
-            <span className="glass-orange px-3 py-1 rounded-full text-xs text-orange-600 flex items-center gap-1.5 animate-fade-in">
+            <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
               Active
             </span>
           )}
         </div>
         <p className="text-xs text-gray-500 mt-1">
-          {hasConversationContext 
-            ? "I remember our chat — ask follow-ups anytime!" 
-            : "Drag restaurants to your plan or click to view details"}
+          Plan breakfast, lunch & dinner • Drag restaurants to add them
         </p>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gray-50/50">
         {messages.map((msg, index) => (
           <div 
             key={msg.id} 
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up`}
-            style={{ animationDelay: `${Math.min(index * 50, 200)}ms` }}
+            style={{ animationDelay: `${Math.min(index * 30, 150)}ms` }}
           >
-            <div className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-sm transition-all hover-scale ${
+            <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${
               msg.role === 'user' 
-                ? 'bg-gradient-to-r from-orange-500 to-rose-500 text-white' 
-                : 'glass border border-white/30'
+                ? 'bg-linear-to-r from-orange-500 to-rose-500 text-white shadow-lg' 
+                : 'bg-white shadow-md border border-gray-100'
             }`}>
-              <p className={`text-sm whitespace-pre-wrap ${
+              <p className={`text-sm whitespace-pre-wrap leading-relaxed ${
                 msg.role === 'user' ? 'text-white' : 'text-gray-800'
               }`}>
                 {msg.content}
@@ -98,11 +98,7 @@ export default function ChatAssistant({
               {msg.restaurants && msg.restaurants.length > 0 && (
                 <div className="mt-3 space-y-2">
                   {msg.restaurants.map((r, i) => (
-                    <div 
-                      key={r.id} 
-                      className="animate-fade-in-up"
-                      style={{ animationDelay: `${i * 100}ms` }}
-                    >
+                    <div key={r.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 75}ms` }}>
                       <RestaurantCard
                         restaurant={r}
                         size="full"
@@ -120,20 +116,20 @@ export default function ChatAssistant({
 
               {/* Plan Actions */}
               {msg.suggestedPlan && (
-                <div className="mt-3 flex gap-2 animate-fade-in delay-300">
+                <div className="mt-3 flex gap-2 animate-fade-in delay-200">
                   <button 
                     onClick={() => onAcceptPlan(msg.suggestedPlan!)}
-                    className="bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-medium 
-                               hover:bg-green-600 transition-all hover-lift flex items-center gap-1.5 shadow-md"
+                    className="bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-semibold 
+                               hover:bg-green-600 transition-all shadow-md flex items-center gap-1.5"
                   >
                     <span>✓</span> Accept Plan
                   </button>
                   <button 
                     onClick={onModifyPlan}
-                    className="glass px-4 py-2 rounded-xl text-sm font-medium text-gray-700
-                               hover:bg-white/80 transition-all hover-lift flex items-center gap-1.5"
+                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-xl text-sm font-medium
+                               hover:bg-gray-200 transition-all flex items-center gap-1.5"
                   >
-                    <span>🔄</span> Show Alternatives
+                    <span>🔄</span> Different Options
                   </button>
                 </div>
               )}
@@ -144,12 +140,12 @@ export default function ChatAssistant({
         {/* Loading */}
         {isLoading && (
           <div className="flex justify-start animate-fade-in">
-            <div className="glass rounded-2xl px-4 py-3 shadow-sm">
+            <div className="bg-white rounded-2xl px-4 py-3 shadow-md border border-gray-100">
               <div className="flex items-center gap-3">
                 <div className="flex gap-1">
                   <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce delay-100"></div>
-                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce delay-200"></div>
+                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                 </div>
                 <span className="text-xs text-gray-400">Finding restaurants...</span>
               </div>
@@ -161,18 +157,15 @@ export default function ChatAssistant({
 
       {/* Quick Prompts */}
       {!isLoading && (
-        <div className="px-4 pb-2 animate-fade-in">
-          <p className="text-xs text-gray-500 mb-2 font-medium">
-            {showFollowUps ? "✨ Refine your search:" : "💡 Try asking:"}
-          </p>
+        <div className="px-4 py-2 bg-gray-50 border-t">
           <div className="flex flex-wrap gap-2">
             {prompts.map((prompt, i) => (
               <button 
                 key={prompt.text}
                 onClick={() => onSendMessage(prompt.text)}
-                className="glass px-3 py-1.5 rounded-full text-xs text-gray-600 
-                           hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200
-                           transition-all hover-scale animate-fade-in-up"
+                className="bg-white px-3 py-1.5 rounded-full text-xs text-gray-600 border border-gray-200
+                           hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600
+                           transition-all shadow-sm animate-fade-in"
                 style={{ animationDelay: `${i * 50}ms` }}
               >
                 <span className="mr-1">{prompt.icon}</span>
@@ -184,27 +177,25 @@ export default function ChatAssistant({
       )}
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-white">
+      <form onSubmit={handleSubmit} className="p-4 border-t bg-white">
         <div className="flex gap-3">
           <input 
             type="text" 
             value={input} 
             onChange={(e) => setInput(e.target.value)}
-            placeholder={hasConversationContext 
-              ? "Ask a follow-up..." 
-              : "What are you in the mood for?"}
+            placeholder="Ask about breakfast, lunch, dinner, or plan a day..."
             className="flex-1 p-4 bg-gray-50 rounded-xl border-2 border-gray-200 
-                       focus:border-orange-400 focus:bg-white focus:shadow-[0_0_20px_rgba(249,115,22,0.15)]
-                       focus:outline-none placeholder-gray-400 transition-all text-gray-800"
+                       focus:border-orange-400 focus:bg-white focus:shadow-lg
+                       focus:outline-none placeholder-gray-400 transition-all"
             disabled={isLoading} 
           />
           <button 
             type="submit" 
             disabled={!input.trim() || isLoading}
-            className="bg-gradient-to-r from-orange-500 to-rose-500 text-white px-6 py-4 rounded-xl 
+            className="bg-linear-to-r from-orange-500 to-rose-500 text-white px-6 py-4 rounded-xl 
                        font-semibold hover:from-orange-600 hover:to-rose-600 
                        disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed 
-                       transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 disabled:shadow-none"
+                       transition-all shadow-lg hover:shadow-xl"
           >
             Send
           </button>

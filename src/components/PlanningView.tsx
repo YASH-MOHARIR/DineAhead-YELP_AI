@@ -1,7 +1,8 @@
 // components/PlanningView.tsx
 import { useState, type DragEvent } from 'react';
-import type { WeeklyPlanType, UserPreferences, Filters, ChatMessage, Restaurant, DayOfWeek } from '../types';
-import { DAYS } from '../constants';
+import type { WeeklyPlanType, UserPreferences, Filters, ChatMessage, Restaurant, DayOfWeek, MealTime } from '../types';
+import { createEmptyWeek, MEAL_BUDGET_TARGETS } from '../types';
+import { DAYS, MEAL_TIMES, DAY_LABELS, MEAL_ICONS, MEAL_PRICE_TARGETS } from '../constants';
 import { searchRestaurants, transformYelpBusiness } from '../utils/api';
 import { getMatchScore } from '../utils/matching';
 import ChatAssistant from './ChatAssistant';
@@ -18,61 +19,103 @@ interface PlanningViewProps {
   hasPlan: boolean;
 }
 
-function buildPreferenceContext(preferences: UserPreferences, filters: Filters): string {
-  const parts: string[] = [];
-  parts.push(`Location: ${filters.location}`);
-  const budgetPerMeal = Math.round(filters.budget / 5);
-  parts.push(`Budget: under $${budgetPerMeal} per meal`);
-  parts.push(`Within ${filters.distance} miles`);
-  if (preferences.dietary) parts.push(`Dietary: ${preferences.dietary} only`);
-  if (preferences.allergens.length > 0) parts.push(`Must avoid: ${preferences.allergens.join(', ')}`);
-  if (preferences.cuisineLikes.length > 0) parts.push(`Preferred cuisines: ${preferences.cuisineLikes.join(', ')}`);
-  if (preferences.cuisineDislikes.length > 0) parts.push(`Avoid cuisines: ${preferences.cuisineDislikes.join(', ')}`);
-  return parts.join('. ') + '.';
+function buildMealQuery(meal: MealTime, preferences: UserPreferences, filters: Filters): string {
+  const target = MEAL_PRICE_TARGETS[meal];
+  const mealDescriptions: Record<MealTime, string> = {
+    breakfast: 'breakfast spots, cafes, brunch places, bakeries, coffee shops with food',
+    lunch: 'lunch restaurants, quick service, casual dining, delis, fast casual',
+    dinner: 'dinner restaurants, fine dining, upscale casual, evening dining'
+  };
+  
+  let query = `Find ${mealDescriptions[meal]} in ${filters.location}. `;
+  query += `Price range $${target.min}-$${target.max} per person. `;
+  if (preferences.dietary) query += `${preferences.dietary} friendly. `;
+  if (preferences.cuisineLikes.length) query += `Preferring ${preferences.cuisineLikes.join(', ')} cuisine. `;
+  query += `Within ${filters.distance} miles.`;
+  
+  return query;
 }
 
 function buildFullQuery(userMessage: string, preferences: UserPreferences, filters: Filters): string {
-  const context = buildPreferenceContext(preferences, filters);
   const lowerMessage = userMessage.toLowerCase();
   
+  // Detect meal-specific requests
+  const mealKeywords: Record<MealTime, string[]> = {
+    breakfast: ['breakfast', 'brunch', 'morning', 'cafe', 'coffee'],
+    lunch: ['lunch', 'midday', 'noon', 'quick bite'],
+    dinner: ['dinner', 'evening', 'supper', 'night']
+  };
+  
+  for (const [meal, keywords] of Object.entries(mealKeywords)) {
+    if (keywords.some(k => lowerMessage.includes(k))) {
+      return buildMealQuery(meal as MealTime, preferences, filters) + ` User wants: ${userMessage}`;
+    }
+  }
+  
+  // Plan entire day
+  if (lowerMessage.includes('plan') && (lowerMessage.includes('day') || DAYS.some(d => lowerMessage.includes(d)))) {
+    return `Find 3 restaurants for a full day of meals (breakfast, lunch, dinner) in ${filters.location}. 
+            Mix of price ranges: breakfast $8-18, lunch $12-28, dinner $18-55.
+            ${preferences.dietary ? `${preferences.dietary} friendly.` : ''}
+            ${preferences.cuisineLikes.length ? `Preferring ${preferences.cuisineLikes.join(', ')}.` : ''}
+            Give variety in cuisines. ${userMessage}`;
+  }
+  
+  // Plan entire week
   if (lowerMessage.includes('plan') && (lowerMessage.includes('week') || lowerMessage.includes('whole'))) {
-    return `Find 5 different restaurants for a weekly meal plan (Monday to Friday). I need variety - different cuisines each day. ${context} Give me diverse options that fit my preferences.`;
+    return `Find diverse restaurants for weekly meal planning in ${filters.location}.
+            I need variety for breakfast ($8-18), lunch ($12-28), and dinner ($18-55).
+            ${preferences.dietary ? `${preferences.dietary} friendly.` : ''}
+            ${preferences.cuisineLikes.length ? `Preferring ${preferences.cuisineLikes.join(', ')}.` : ''}
+            Budget total: $${filters.budget}/week. Give me a good mix of price points.`;
   }
-  if (lowerMessage.includes('more') || lowerMessage.includes('alternative') || lowerMessage.includes('other') || lowerMessage.includes('different')) {
-    return `Show me different restaurant options. ${context} ${userMessage}`;
-  }
+  
+  // Cheap/budget requests
   if (lowerMessage.includes('cheap') || lowerMessage.includes('budget') || lowerMessage.includes('affordable')) {
-    const lowerBudget = Math.round(filters.budget / 7);
-    return `Find affordable restaurants under $${lowerBudget} per meal in ${filters.location}. ${preferences.dietary ? `${preferences.dietary} options.` : ''} ${userMessage}`;
+    return `Find affordable restaurants in ${filters.location}. Under $15 per meal.
+            ${preferences.dietary ? `${preferences.dietary} friendly.` : ''} ${userMessage}`;
   }
-  if (lowerMessage.includes('health')) {
-    return `Find healthy restaurants with nutritious options. ${context} Focus on fresh, healthy food. ${userMessage}`;
+  
+  // Fancy/expensive requests
+  if (lowerMessage.includes('fancy') || lowerMessage.includes('nice') || lowerMessage.includes('special') || lowerMessage.includes('upscale')) {
+    return `Find upscale, highly-rated restaurants in ${filters.location}. $$$ to $$$$ price range.
+            ${preferences.dietary ? `${preferences.dietary} friendly.` : ''} ${userMessage}`;
   }
-  if (lowerMessage.includes('spic')) {
-    return `Find restaurants with spicy food options in ${filters.location}. ${preferences.dietary ? `${preferences.dietary} friendly.` : ''} Budget under $${Math.round(filters.budget / 5)} per meal. ${userMessage}`;
-  }
-  if (lowerMessage.includes('surprise') || lowerMessage.includes('random')) {
-    return `Recommend a unique, highly-rated restaurant I might not have tried. ${context} Something special and interesting.`;
-  }
-  const cuisines = ['italian', 'mexican', 'chinese', 'japanese', 'indian', 'thai', 'korean', 'vietnamese', 'mediterranean', 'greek', 'french', 'american'];
-  for (const cuisine of cuisines) {
-    if (lowerMessage.includes(cuisine)) return `Find the best ${cuisine} restaurants. ${context}`;
-  }
-  return `${userMessage}. ${context}`;
+  
+  // Default with context
+  const budgetPerMeal = Math.round(filters.budget / 21); // 7 days × 3 meals
+  return `${userMessage} in ${filters.location}. 
+          ${preferences.dietary ? `${preferences.dietary} friendly.` : ''} 
+          Show variety in price ranges ($-$$$$). Within ${filters.distance} miles.`;
 }
 
 export default function PlanningView({ plan, setPlan, preferences, filters, onBack, onFinish, hasPlan }: PlanningViewProps) {
-  const budgetPerMeal = Math.round(filters.budget / 5);
+  const avgPerMeal = Math.round(filters.budget / 21);
   
   const [messages, setMessages] = useState<ChatMessage[]>([{
     id: '1', 
     role: 'assistant',
-    content: `Hi! I'm your DineAhead assistant 🍽️\n\nI'll help you find restaurants in **${filters.location}** within your **$${budgetPerMeal}/meal** budget.${preferences.dietary ? `\n✓ Focusing on **${preferences.dietary}** options` : ''}${preferences.cuisineLikes.length > 0 ? `\n✓ You like: ${preferences.cuisineLikes.join(', ')}` : ''}${preferences.allergens.length > 0 ? `\n✓ Avoiding: ${preferences.allergens.join(', ')}` : ''}\n\n**Try asking:**\n• "Plan my whole week"\n• "Find Italian restaurants"\n• "Something spicy and cheap"\n\n💬 I remember our conversation - ask follow-ups anytime!`,
+    content: `Hi! I'm your DineAhead assistant 🍽️
+
+I'll help you plan **breakfast, lunch & dinner** for the week in **${filters.location}**.
+
+📊 **Your Budget:** $${filters.budget}/week (~$${avgPerMeal}/meal average)
+${preferences.dietary ? `✓ **Diet:** ${preferences.dietary}` : ''}
+${preferences.cuisineLikes.length ? `✓ **Favorites:** ${preferences.cuisineLikes.join(', ')}` : ''}
+
+**Try asking:**
+• "Plan Monday's meals"
+• "Find breakfast spots"
+• "Fancy dinner options"
+• "Cheap lunch under $12"
+• "Plan my whole week"
+
+💡 I'll suggest a mix of prices - not everything needs to be the same cost!`,
     timestamp: new Date(),
   }]);
+  
   const [isLoading, setIsLoading] = useState(false);
   const [viewingRestaurant, setViewingRestaurant] = useState<Restaurant | null>(null);
-  const [dragOverDay, setDragOverDay] = useState<DayOfWeek | null>(null);
   const [chatId, setChatId] = useState<string | undefined>(undefined);
 
   const handleDragStart = (e: DragEvent<HTMLDivElement>, restaurant: Restaurant) => {
@@ -80,18 +123,35 @@ export default function PlanningView({ plan, setPlan, preferences, filters, onBa
     e.dataTransfer.effectAllowed = 'copy';
   };
 
-  const handleDrop = (day: DayOfWeek, restaurant: Restaurant) => {
-    setPlan({ ...plan, [day]: { restaurant, dishes: [] } });
+  const handleDrop = (day: DayOfWeek, meal: MealTime, restaurant: Restaurant) => {
+    const newPlan = { ...plan };
+    newPlan[day] = { 
+      ...newPlan[day], 
+      [meal]: { restaurant, mealTime: meal } 
+    };
+    setPlan(newPlan);
+    
     setMessages(prev => [...prev, {
-      id: Date.now().toString(), 
+      id: Date.now().toString(),
       role: 'assistant',
-      content: `✓ Added **${restaurant.name}** to **${day.charAt(0).toUpperCase() + day.slice(1)}**!`,
+      content: `✓ Added **${restaurant.name}** to **${DAY_LABELS[day].full} ${meal}**! (${restaurant.priceLevel} ~$${restaurant.estimatedCost})`,
       timestamp: new Date(),
     }]);
   };
 
+  const handleRemove = (day: DayOfWeek, meal: MealTime) => {
+    const newPlan = { ...plan };
+    newPlan[day] = { ...newPlan[day], [meal]: null };
+    setPlan(newPlan);
+  };
+
   const handleSendMessage = async (content: string) => {
-    setMessages(prev => [...prev, { id: Date.now().toString(), role: 'user', content, timestamp: new Date() }]);
+    setMessages(prev => [...prev, { 
+      id: Date.now().toString(), 
+      role: 'user', 
+      content, 
+      timestamp: new Date() 
+    }]);
     setIsLoading(true);
 
     try {
@@ -116,38 +176,92 @@ export default function PlanningView({ plan, setPlan, preferences, filters, onBa
       let assistantContent = '';
       let suggestedPlan: Partial<WeeklyPlanType> | undefined;
 
+      // Check if planning a specific day
+      const dayMatch = DAYS.find(d => lowerContent.includes(d));
+      
       if (restaurants.length > 0) {
-        if (lowerContent.includes('plan') && (lowerContent.includes('week') || lowerContent.includes('whole'))) {
-          assistantContent = `Here's your personalized meal plan for **${filters.location}**:\n\n`;
-          suggestedPlan = {};
-          restaurants.slice(0, 5).forEach((r, i) => {
-            const day = DAYS[i];
-            const score = getMatchScore(r, preferences, filters);
-            assistantContent += `**${day.charAt(0).toUpperCase() + day.slice(1)}**: ${r.name}\n   ${r.cuisine} • ${r.priceLevel} (~$${r.estimatedCost}) • ${score}% match\n\n`;
-            (suggestedPlan as any)[day] = { restaurant: r, dishes: [] };
+        if (dayMatch && lowerContent.includes('plan')) {
+          // Plan a single day
+          assistantContent = `Here's my suggestion for **${DAY_LABELS[dayMatch].full}**:\n\n`;
+          suggestedPlan = { [dayMatch]: { breakfast: null, lunch: null, dinner: null } };
+          
+          const sortedByPrice = [...restaurants].sort((a, b) => a.estimatedCost - b.estimatedCost);
+          const breakfast = sortedByPrice.find(r => r.estimatedCost <= 18) || sortedByPrice[0];
+          const dinner = sortedByPrice.reverse().find(r => r.estimatedCost >= 20) || sortedByPrice[0];
+          const lunch = sortedByPrice.find(r => r.id !== breakfast.id && r.id !== dinner.id) || sortedByPrice[1] || breakfast;
+          
+          const meals = [
+            { meal: 'breakfast' as MealTime, r: breakfast },
+            { meal: 'lunch' as MealTime, r: lunch },
+            { meal: 'dinner' as MealTime, r: dinner }
+          ];
+          
+          meals.forEach(({ meal, r }) => {
+            if (r) {
+              assistantContent += `${MEAL_ICONS[meal]} **${meal.charAt(0).toUpperCase() + meal.slice(1)}**: ${r.name}\n`;
+              assistantContent += `   ${r.cuisine} • ${r.priceLevel} • ~$${r.estimatedCost}\n\n`;
+              (suggestedPlan![dayMatch] as any)[meal] = { restaurant: r, mealTime: meal };
+            }
           });
-          const totalCost = restaurants.slice(0, 5).reduce((sum, r) => sum + r.estimatedCost, 0);
-          assistantContent += `💰 **Estimated Total: $${totalCost}** ${totalCost <= filters.budget ? '✓ Within budget!' : '⚠️ Over budget'}`;
-          assistantContent += `\n\nClick **Accept Plan** or **Show Alternatives**!`;
+          
+          const dayTotal = meals.reduce((sum, { r }) => sum + (r?.estimatedCost || 0), 0);
+          assistantContent += `💰 **Day Total: ~$${dayTotal}**\n\nClick **Accept Plan** or drag individual restaurants!`;
+          
+        } else if (lowerContent.includes('plan') && lowerContent.includes('week')) {
+          // Plan entire week (simplified - show diverse options)
+          assistantContent = `Here are diverse options for your week:\n\n`;
+          assistantContent += `**Budget-Friendly ($):**\n`;
+          const cheap = restaurants.filter(r => r.estimatedCost <= 15).slice(0, 2);
+          cheap.forEach(r => {
+            assistantContent += `• ${r.name} - ${r.cuisine} (~$${r.estimatedCost})\n`;
+          });
+          
+          assistantContent += `\n**Mid-Range ($$):**\n`;
+          const mid = restaurants.filter(r => r.estimatedCost > 15 && r.estimatedCost <= 30).slice(0, 2);
+          mid.forEach(r => {
+            assistantContent += `• ${r.name} - ${r.cuisine} (~$${r.estimatedCost})\n`;
+          });
+          
+          assistantContent += `\n**Splurge ($$$+):**\n`;
+          const fancy = restaurants.filter(r => r.estimatedCost > 30).slice(0, 2);
+          fancy.forEach(r => {
+            assistantContent += `• ${r.name} - ${r.cuisine} (~$${r.estimatedCost})\n`;
+          });
+          
+          assistantContent += `\n💡 Drag these to specific meal slots, or ask me to "Plan Monday" for a full day!`;
+          
         } else {
-          assistantContent = aiText || `Found ${restaurants.length} option${restaurants.length > 1 ? 's' : ''} in ${filters.location}:`;
+          // Regular search
+          assistantContent = aiText || `Found ${restaurants.length} options with varied prices:`;
+          
+          // Group by price for display
+          const priceGroups = {
+            budget: restaurants.filter(r => r.estimatedCost <= 15),
+            moderate: restaurants.filter(r => r.estimatedCost > 15 && r.estimatedCost <= 30),
+            upscale: restaurants.filter(r => r.estimatedCost > 30)
+          };
+          
+          if (priceGroups.budget.length && priceGroups.upscale.length) {
+            assistantContent += `\n\n💰 Mix of prices from $${Math.min(...restaurants.map(r => r.estimatedCost))} to $${Math.max(...restaurants.map(r => r.estimatedCost))}`;
+          }
         }
       } else {
-        assistantContent = aiText || `I couldn't find restaurants matching that in ${filters.location}. Try different criteria!`;
+        assistantContent = aiText || `I couldn't find restaurants matching that. Try different criteria!`;
       }
 
       setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(), 
-        role: 'assistant', 
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
         content: assistantContent,
-        restaurants: restaurants.slice(0, 5), 
-        suggestedPlan, 
+        restaurants: restaurants.slice(0, 6),
+        suggestedPlan,
         timestamp: new Date(),
       }]);
+
     } catch (error) {
       console.error('Error:', error);
       setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(), 
+        id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: `Sorry, I had trouble searching. Please try again!`,
         timestamp: new Date(),
@@ -158,31 +272,39 @@ export default function PlanningView({ plan, setPlan, preferences, filters, onBa
   };
 
   const handleAcceptPlan = (suggestedPlan: Partial<WeeklyPlanType>) => {
-    setPlan({ ...plan, ...suggestedPlan } as WeeklyPlanType);
+    const newPlan = { ...plan };
+    Object.keys(suggestedPlan).forEach(day => {
+      const dayKey = day as DayOfWeek;
+      const dayPlan = suggestedPlan[dayKey];
+      if (dayPlan) {
+        newPlan[dayKey] = { ...newPlan[dayKey], ...dayPlan };
+      }
+    });
+    setPlan(newPlan);
+    
     setMessages(prev => [...prev, {
-      id: Date.now().toString(), 
+      id: Date.now().toString(),
       role: 'assistant',
-      content: `🎉 Plan accepted! All restaurants added.\n\nWant changes? Ask "swap Tuesday" or "find cheaper options"!`,
+      content: `🎉 Added to your plan! Want me to plan another day, or find alternatives?`,
       timestamp: new Date(),
     }]);
   };
 
-  const handleModifyPlan = () => handleSendMessage("Show me different restaurant alternatives");
-  const handleRemove = (day: DayOfWeek) => setPlan({ ...plan, [day]: null });
-  
+  const handleModifyPlan = () => handleSendMessage("Show me different options with varied prices");
+
   const handleResetConversation = () => {
     setChatId(undefined);
     setMessages([{
       id: Date.now().toString(),
       role: 'assistant',
-      content: `Fresh start! 🔄 What are you in the mood for in **${filters.location}**?`,
+      content: `Fresh start! 🔄 What meals can I help you plan in **${filters.location}**?`,
       timestamp: new Date(),
     }]);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-100 via-rose-50 to-purple-100 p-4">
-      {/* Animated background blobs */}
+      {/* Background blobs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-orange-300/30 rounded-full blur-3xl animate-pulse-soft"></div>
         <div className="absolute top-1/2 -left-40 w-80 h-80 bg-rose-300/30 rounded-full blur-3xl animate-pulse-soft delay-300"></div>
@@ -205,10 +327,10 @@ export default function PlanningView({ plan, setPlan, preferences, filters, onBa
           )}
         </div>
         
-        {/* Main Layout - Sidebar sticky */}
+        {/* Main Layout */}
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Sticky Sidebar */}
-          <div className="lg:w-80 flex-shrink-0">
+          <div className="lg:w-96 flex-shrink-0">
             <div className="lg:sticky lg:top-4 animate-fade-in-left">
               <WeeklyPlanDisplay 
                 plan={plan} 
@@ -216,8 +338,6 @@ export default function PlanningView({ plan, setPlan, preferences, filters, onBa
                 onRemove={handleRemove}
                 onDrop={handleDrop}
                 onViewRestaurant={setViewingRestaurant}
-                dragOverDay={dragOverDay} 
-                setDragOverDay={setDragOverDay}
                 onFinish={onFinish} 
                 hasPlan={hasPlan}
               />
@@ -247,15 +367,7 @@ export default function PlanningView({ plan, setPlan, preferences, filters, onBa
         <RestaurantDetailModal
           restaurant={viewingRestaurant} 
           onClose={() => setViewingRestaurant(null)}
-          onAddToDay={(day) => {
-            setPlan({ ...plan, [day]: { restaurant: viewingRestaurant, dishes: [] } });
-            setMessages(prev => [...prev, {
-              id: Date.now().toString(), 
-              role: 'assistant',
-              content: `✓ Added **${viewingRestaurant.name}** to **${day.charAt(0).toUpperCase() + day.slice(1)}**!`,
-              timestamp: new Date(),
-            }]);
-          }}
+          onAddToDay={(day, meal) => handleDrop(day, meal, viewingRestaurant)}
           preferences={preferences} 
           filters={filters}
         />
