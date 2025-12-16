@@ -1,4 +1,15 @@
 // components/Landing.tsx
+import { 
+  UtensilsCrossed, 
+  Bot, 
+  Calendar, 
+  Wallet, 
+  CalendarCheck,
+  BookOpen,
+  ArrowRight,
+  Sparkles,
+  MessageSquare
+} from 'lucide-react';
 
 interface LandingProps {
   onStart: () => void;
@@ -8,10 +19,10 @@ interface LandingProps {
 
 export default function Landing({ onStart, savedPlansCount, onShowSavedPlans }: LandingProps) {
   const features = [
-    { icon: '🤖', title: 'AI-Powered Planning', description: 'Chat naturally to discover restaurants that match your taste' },
-    { icon: '📅', title: 'Weekly Meal Plans', description: 'Drag and drop to build your perfect dining week' },
-    { icon: '💰', title: 'Budget Tracking', description: 'Stay on budget with real-time cost tracking' },
-    { icon: '🍽️', title: 'Easy Reservations', description: 'Book tables or export to your calendar' }
+    { icon: Bot, title: 'AI-Powered Planning', description: 'Chat naturally to discover restaurants that match your taste' },
+    { icon: Calendar, title: 'Weekly Meal Plans', description: 'Drag and drop to build your perfect dining week' },
+    { icon: Wallet, title: 'Budget Tracking', description: 'Stay on budget with real-time cost tracking' },
+    { icon: CalendarCheck, title: 'Easy Reservations', description: 'Book tables or export to your calendar' }
   ];
 
   const steps = [
@@ -37,7 +48,7 @@ export default function Landing({ onStart, savedPlansCount, onShowSavedPlans }: 
           {/* Header */}
           <div className="flex justify-between items-center mb-16 animate-fade-in-down">
             <div className="flex items-center gap-2">
-              <span className="text-3xl animate-float">🍽️</span>
+              <UtensilsCrossed className="w-8 h-8 text-white animate-float" />
               <span className="text-white font-bold text-xl">DineAhead</span>
             </div>
             {savedPlansCount > 0 && (
@@ -46,7 +57,7 @@ export default function Landing({ onStart, savedPlansCount, onShowSavedPlans }: 
                 className="glass-dark text-white px-4 py-2 rounded-full text-sm font-medium 
                            hover:bg-white/20 transition-all hover-lift flex items-center gap-2"
               >
-                <span>📚</span>
+                <BookOpen className="w-4 h-4" />
                 <span>Saved Plans ({savedPlansCount})</span>
               </button>
             )}
@@ -73,7 +84,7 @@ export default function Landing({ onStart, savedPlansCount, onShowSavedPlans }: 
                            hover-lift flex items-center gap-2 group"
               >
                 <span>Start Planning</span>
-                <span className="group-hover:translate-x-1 transition-transform">→</span>
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
               <p className="text-white/70 text-sm">Free • No signup required</p>
             </div>
@@ -102,14 +113,16 @@ export default function Landing({ onStart, savedPlansCount, onShowSavedPlans }: 
                   {/* Chat mock */}
                   <div className="col-span-2 glass-dark rounded-lg p-3">
                     <div className="space-y-2">
-                      <div className="bg-gray-700/50 rounded-lg p-2 max-w-[80%] animate-fade-in-right">
-                        <p className="text-white text-xs">🤖 I found 5 great Italian restaurants...</p>
+                      <div className="bg-gray-700/50 rounded-lg p-2 max-w-[80%] animate-fade-in-right flex items-start gap-2">
+                        <Bot className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
+                        <p className="text-white text-xs">I found 5 great Italian restaurants...</p>
                       </div>
                       <div className="bg-gradient-to-r from-orange-500 to-rose-500 rounded-lg p-2 max-w-[60%] ml-auto animate-fade-in-left delay-100">
                         <p className="text-white text-xs">Show me something spicy!</p>
                       </div>
-                      <div className="bg-gray-700/50 rounded-lg p-2 max-w-[80%] animate-fade-in-right delay-200">
-                        <p className="text-white text-xs">🌶️ Here are some hot picks...</p>
+                      <div className="bg-gray-700/50 rounded-lg p-2 max-w-[80%] animate-fade-in-right delay-200 flex items-start gap-2">
+                        <Sparkles className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
+                        <p className="text-white text-xs">Here are some hot picks...</p>
                       </div>
                     </div>
                   </div>
@@ -138,9 +151,9 @@ export default function Landing({ onStart, savedPlansCount, onShowSavedPlans }: 
                            transition-all group hover-lift animate-fade-in-up"
                 style={{ animationDelay: `${i * 100}ms` }}
               >
-                <div className="text-4xl mb-4 group-hover:scale-110 transition-transform animate-float" 
-                     style={{ animationDelay: `${i * 200}ms` }}>
-                  {feature.icon}
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-orange-100 to-rose-100 
+                                flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <feature.icon className="w-8 h-8 text-orange-500" />
                 </div>
                 <h3 className="font-bold text-gray-800 mb-2">{feature.title}</h3>
                 <p className="text-gray-600 text-sm">{feature.description}</p>
@@ -168,7 +181,7 @@ export default function Landing({ onStart, savedPlansCount, onShowSavedPlans }: 
                   <p className="text-gray-700 font-medium text-sm">{step.text}</p>
                 </div>
                 {i < steps.length - 1 && (
-                  <span className="hidden md:block text-orange-300 text-2xl animate-pulse-soft">→</span>
+                  <ArrowRight className="hidden md:block w-6 h-6 text-orange-300 animate-pulse-soft" />
                 )}
               </div>
             ))}
@@ -204,9 +217,10 @@ export default function Landing({ onStart, savedPlansCount, onShowSavedPlans }: 
             onClick={onStart}
             className="bg-white text-orange-600 px-10 py-4 rounded-full text-lg font-bold 
                        hover:bg-orange-50 transition-all shadow-xl hover:shadow-2xl 
-                       hover-lift animate-fade-in-up delay-200"
+                       hover-lift animate-fade-in-up delay-200 inline-flex items-center gap-2"
           >
-            Get Started Free →
+            Get Started Free
+            <ArrowRight className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -216,7 +230,7 @@ export default function Landing({ onStart, savedPlansCount, onShowSavedPlans }: 
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-2xl">🍽️</span>
+              <UtensilsCrossed className="w-6 h-6 text-white" />
               <span className="text-white font-bold">DineAhead</span>
             </div>
             <p className="text-gray-500 text-sm">

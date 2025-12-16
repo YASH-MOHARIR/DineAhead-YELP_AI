@@ -2,6 +2,7 @@
 import type { DragEvent } from 'react';
 import type { Restaurant, UserPreferences, Filters } from '../types';
 import { getMatchScore, getMatchIndicators } from '../utils/matching';
+import { Star, Calendar, GripVertical } from 'lucide-react';
 
 type CardSize = 'mini' | 'compact' | 'full';
 
@@ -93,7 +94,9 @@ export default function RestaurantCard({
         <div className="text-right">
           <p className="font-semibold text-orange-600">${restaurant.estimatedCost}</p>
           {restaurant.supportsReservation && (
-            <span className="text-xs text-green-600">📅 Reservations</span>
+            <span className="text-xs text-green-600 flex items-center gap-1">
+              <Calendar className="w-3 h-3" /> Reservations
+            </span>
           )}
         </div>
       </div>
@@ -138,13 +141,13 @@ export default function RestaurantCard({
             {restaurant.name}
           </h4>
           {restaurant.supportsReservation && (
-            <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full animate-fade-in">
-              📅
+            <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full animate-fade-in flex items-center gap-0.5">
+              <Calendar className="w-3 h-3" />
             </span>
           )}
         </div>
-        <p className="text-xs text-gray-500">
-          {restaurant.cuisine} • {restaurant.priceLevel} • ⭐ {restaurant.rating}
+        <p className="text-xs text-gray-500 flex items-center gap-1">
+          {restaurant.cuisine} • {restaurant.priceLevel} • <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" /> {restaurant.rating}
         </p>
         {topIndicators.length > 0 && (
           <div className="flex gap-1 mt-1.5 flex-wrap">
@@ -164,7 +167,7 @@ export default function RestaurantCard({
       
       {draggable && (
         <div className="text-gray-300 group-hover:text-orange-400 transition-colors">
-          <span className="text-xl">⋮⋮</span>
+          <GripVertical className="w-5 h-5" />
         </div>
       )}
     </div>

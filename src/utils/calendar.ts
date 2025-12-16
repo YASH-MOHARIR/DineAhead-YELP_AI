@@ -1,5 +1,5 @@
 // utils/calendar.ts - ICS calendar file generation
-import type { WeeklyPlanType, DayOfWeek, MealTime } from '../types';
+import type { WeeklyPlanType, MealTime } from '../types';
 import { DAYS, MEAL_TIMES, DAY_OFFSETS, MEAL_ICONS } from '../constants';
 
 function formatDate(date: Date): string {

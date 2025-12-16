@@ -1,6 +1,7 @@
 // components/Preferences.tsx
-import type  { UserPreferences } from '../types';
+import type { UserPreferences } from '../types';
 import { DIETARY_OPTIONS, ALLERGEN_OPTIONS, CUISINE_OPTIONS } from '../constants';
+import { ArrowLeft, ArrowRight, Utensils, AlertTriangle, Heart, ThumbsUp, ThumbsDown } from 'lucide-react';
 
 interface PreferencesProps {
   preferences: UserPreferences;
@@ -40,13 +41,17 @@ export default function Preferences({ preferences, setPreferences, onNext, onBac
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-2xl mx-auto">
-        <button onClick={onBack} className="text-gray-500 mb-4 hover:text-gray-700">← Back</button>
+        <button onClick={onBack} className="text-gray-500 mb-4 hover:text-gray-700 flex items-center gap-2">
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Your Preferences</h1>
         <p className="text-gray-600 mb-8">Tell us about your dietary needs and taste</p>
 
         {/* Dietary Preference */}
         <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
-          <h2 className="font-semibold text-gray-800 mb-4">Dietary Preference</h2>
+          <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <Utensils className="w-5 h-5 text-orange-500" /> Dietary Preference
+          </h2>
           <div className="grid grid-cols-2 gap-3">
             {DIETARY_OPTIONS.map(opt => (
               <button 
@@ -69,7 +74,9 @@ export default function Preferences({ preferences, setPreferences, onNext, onBac
 
         {/* Allergens */}
         <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
-          <h2 className="font-semibold text-gray-800 mb-4">Allergens to Avoid</h2>
+          <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-orange-500" /> Allergens to Avoid
+          </h2>
           <div className="flex flex-wrap gap-2">
             {ALLERGEN_OPTIONS.map(a => (
               <button 
@@ -89,13 +96,17 @@ export default function Preferences({ preferences, setPreferences, onNext, onBac
 
         {/* Cuisine Preferences */}
         <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
-          <h2 className="font-semibold text-gray-800 mb-2">Cuisine Preferences</h2>
-          <p className="text-sm text-gray-500 mb-4">Tap once to like 👍, tap again to dislike 👎</p>
+          <h2 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+            <Heart className="w-5 h-5 text-orange-500" /> Cuisine Preferences
+          </h2>
+          <p className="text-sm text-gray-500 mb-4 flex items-center gap-2">
+            Tap once to like <ThumbsUp className="w-4 h-4 text-green-500" />, tap again to dislike <ThumbsDown className="w-4 h-4 text-red-500" />
+          </p>
           <div className="flex flex-wrap gap-2">
             {CUISINE_OPTIONS.map(c => {
               const isL = preferences.cuisineLikes.includes(c);
               const isD = preferences.cuisineDislikes.includes(c);
-              let cn = 'px-4 py-2 rounded-full text-sm transition-all ';
+              let cn = 'px-4 py-2 rounded-full text-sm transition-all flex items-center gap-1.5 ';
               if (isL) cn += 'bg-green-100 text-green-700 border-2 border-green-300';
               else if (isD) cn += 'bg-red-100 text-red-700 border-2 border-red-300';
               else cn += 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200';
@@ -106,7 +117,9 @@ export default function Preferences({ preferences, setPreferences, onNext, onBac
                   onClick={() => toggleCuisine(c, isL ? 'dislike' : 'like')} 
                   className={cn}
                 >
-                  {isL && '👍 '}{isD && '👎 '}{c}
+                  {isL && <ThumbsUp className="w-3.5 h-3.5" />}
+                  {isD && <ThumbsDown className="w-3.5 h-3.5" />}
+                  {c}
                 </button>
               );
             })}
@@ -115,9 +128,12 @@ export default function Preferences({ preferences, setPreferences, onNext, onBac
 
         <button 
           onClick={onNext} 
-          className="w-full bg-orange-500 text-white py-4 rounded-xl font-semibold hover:bg-orange-600 transition-all"
+          className="w-full bg-gradient-to-r from-orange-500 to-rose-500 text-white py-4 rounded-xl 
+                     font-semibold hover:from-orange-600 hover:to-rose-600 transition-all shadow-lg 
+                     hover:shadow-xl flex items-center justify-center gap-2"
         >
-          Continue to Budget →
+          Continue to Budget
+          <ArrowRight className="w-5 h-5" />
         </button>
       </div>
     </div>
