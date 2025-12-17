@@ -31,7 +31,7 @@ const FOLLOW_UP_PROMPTS = [
 ];
 
 // ⭐ NEW: Simple markdown renderer
-function renderMarkdown(text: string): JSX.Element {
+function renderMarkdown(text: string): React.ReactElement {
   // Split by newlines and process each line
   const lines = text.split('\n');
   

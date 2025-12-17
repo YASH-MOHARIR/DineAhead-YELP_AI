@@ -53,6 +53,12 @@ export const DAY_OFFSETS: Record<DayOfWeek, number> = {
   sunday: 6
 };
 
+export const MEAL_TIMES_HOURS: Record<MealTime, { start: number; end: number }> = {
+  breakfast: { start: 8, end: 9 },
+  lunch: { start: 12, end: 13 },
+  dinner: { start: 19, end: 21 }
+};
+
 export const PRICE_MAP: Record<string, number> = {
   '$': 12,
   '$$': 22,
