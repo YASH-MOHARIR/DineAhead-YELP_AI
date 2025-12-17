@@ -1,5 +1,5 @@
 // components/WeeklyPlanDisplay.tsx
-import { useState, DragEvent } from 'react';
+import { useState, type DragEvent } from 'react';
 import type { WeeklyPlanType, DayOfWeek, MealTime, Restaurant } from '../types';
 import { DAYS, MEAL_TIMES, DAY_LABELS, MEAL_ICONS } from '../constants';
 
@@ -87,45 +87,51 @@ export default function WeeklyPlanDisplay({
         </div>
       </div>
 
-      {/* Day Tabs - With Labels Above */}
+      {/* Day Tabs - With Labels Above - DEBUG VERSION */}
       <div className="flex border-b overflow-x-auto scrollbar-hide bg-white">
         {DAYS.map(day => {
-          const dayMeals = calculateDayMeals(day);
           const isExpanded = expandedDay === day;
           return (
             <button
               key={day}
               onClick={() => setExpandedDay(day)}
-              className={`flex-1 min-w-[60px] py-2.5 px-1 text-center transition-all relative flex flex-col items-center gap-1 ${
+              className={`flex-1 min-w-[70px] py-3 px-2 transition-all relative ${
                 isExpanded 
-                  ? 'bg-orange-50 text-orange-600' 
-                  : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
+                  ? 'bg-orange-100' 
+                  : 'bg-white hover:bg-gray-50'
               }`}
             >
-              {/* Day Label */}
-              <span className={`text-[10px] font-bold uppercase tracking-wide ${
-                isExpanded ? 'text-orange-600' : 'text-gray-400'
-              }`}>
+              {/* Day Label - SUPER VISIBLE TEST */}
+              <div 
+                className="text-sm font-extrabold uppercase mb-2 tracking-wide"
+                style={{ 
+                  color: isExpanded ? '#ea580c' : '#6b7280',
+                  fontSize: '14px',
+                  lineHeight: '1'
+                }}
+              >
                 {DAY_LABELS[day].short}
-              </span>
+              </div>
               
               {/* Progress dots */}
-              <div className="flex justify-center gap-0.5">
+              <div className="flex justify-center gap-1.5">
                 {MEAL_TIMES.map(meal => (
                   <div 
                     key={meal}
-                    className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                      plan[day][meal] 
-                        ? isExpanded ? 'bg-orange-500' : 'bg-orange-400'
-                        : 'bg-gray-200'
-                    }`}
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: plan[day][meal] ? '#f97316' : '#d1d5db',
+                      transition: 'all 0.2s'
+                    }}
                   />
                 ))}
               </div>
               
               {/* Active indicator */}
               {isExpanded && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500" />
+                <div className="absolute bottom-0 left-0 right-0" style={{ height: '3px', backgroundColor: '#f97316' }} />
               )}
             </button>
           );

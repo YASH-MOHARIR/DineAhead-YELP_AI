@@ -25,6 +25,13 @@ export interface ReviewSnippet {
   rating: number | null;
 }
 
+// ⭐ ADDED: MatchIndicator interface
+export interface MatchIndicator {
+  label: string;
+  matched: boolean;
+  icon: string;
+}
+
 export interface Restaurant {
   id: string;
   name: string;
@@ -36,30 +43,28 @@ export interface Restaurant {
   distance: string;
   distanceNum: number;
   address: string;
-  phone?: string;
   imageUrl: string;
-  photos: string[];
+  yelpUrl: string; // ⭐ ADDED
+  summaries: { short: string; medium: string; long: string }; // ⭐ ADDED
   reviewSnippets: ReviewSnippet[];
-  supportsReservation?: boolean;
-  categories?: string[];
-  hours?: string[];
-  attributes?: string[];
+  contextualSummary: string; // ⭐ ADDED
+  photos: string[];
+  phone: string;
+  supportsReservation: boolean;
+  reservationUrl: string | null;
 }
 
-// NEW: Meal slot for a specific meal time
 export interface MealSlot {
   restaurant: Restaurant;
-  dishes: string[];
+  mealTime: MealTime;
 }
 
-// NEW: Day plan with breakfast, lunch, and dinner
 export interface DayPlan {
   breakfast: MealSlot | null;
   lunch: MealSlot | null;
   dinner: MealSlot | null;
 }
 
-// NEW: Weekly plan with 7 days × 3 meals
 export interface WeeklyPlanType {
   monday: DayPlan;
   tuesday: DayPlan;
@@ -68,6 +73,15 @@ export interface WeeklyPlanType {
   friday: DayPlan;
   saturday: DayPlan;
   sunday: DayPlan;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  restaurants?: Restaurant[];
+  suggestedPlan?: Partial<WeeklyPlanType>;
+  timestamp: Date;
 }
 
 export interface SavedPlan {
@@ -80,25 +94,27 @@ export interface SavedPlan {
   totalCost: number;
 }
 
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  restaurants?: Restaurant[];
-  suggestedPlan?: Partial<WeeklyPlanType>;
-  timestamp: Date;
-}
+// Budget targets per meal type
+export const MEAL_BUDGET_TARGETS: Record<MealTime, { min: number; max: number; label: string }> = {
+  breakfast: { min: 8, max: 18, label: '🌅 Breakfast' },
+  lunch: { min: 12, max: 28, label: '☀️ Lunch' },
+  dinner: { min: 18, max: 55, label: '🌙 Dinner' }
+};
+
+// Helper to create empty day plan
+export const createEmptyDayPlan = (): DayPlan => ({
+  breakfast: null,
+  lunch: null,
+  dinner: null
+});
 
 // Helper to create empty week
-export function createEmptyWeek(): WeeklyPlanType {
-  const emptyDay: DayPlan = { breakfast: null, lunch: null, dinner: null };
-  return {
-    monday: { ...emptyDay },
-    tuesday: { ...emptyDay },
-    wednesday: { ...emptyDay },
-    thursday: { ...emptyDay },
-    friday: { ...emptyDay },
-    saturday: { ...emptyDay },
-    sunday: { ...emptyDay }
-  };
-}
+export const createEmptyWeek = (): WeeklyPlanType => ({
+  monday: createEmptyDayPlan(),
+  tuesday: createEmptyDayPlan(),
+  wednesday: createEmptyDayPlan(),
+  thursday: createEmptyDayPlan(),
+  friday: createEmptyDayPlan(),
+  saturday: createEmptyDayPlan(),
+  sunday: createEmptyDayPlan()
+});

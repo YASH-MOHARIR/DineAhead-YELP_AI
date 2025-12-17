@@ -30,6 +30,41 @@ const FOLLOW_UP_PROMPTS = [
   { text: "Plan another day", icon: "📅" }
 ];
 
+// ⭐ NEW: Simple markdown renderer
+function renderMarkdown(text: string): JSX.Element {
+  // Split by newlines and process each line
+  const lines = text.split('\n');
+  
+  return (
+    <>
+      {lines.map((line, i) => {
+        // Bold text **text**
+        let processedLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        
+        // Bullet points • or -
+        if (line.trim().startsWith('•') || line.trim().startsWith('-')) {
+          return (
+            <div key={i} className="flex gap-2 my-1">
+              <span className="text-orange-500">•</span>
+              <span dangerouslySetInnerHTML={{ __html: processedLine.replace(/^[•\-]\s*/, '') }} />
+            </div>
+          );
+        }
+        
+        // Empty lines
+        if (line.trim() === '') {
+          return <div key={i} className="h-2" />;
+        }
+        
+        // Regular lines
+        return (
+          <div key={i} dangerouslySetInnerHTML={{ __html: processedLine }} />
+        );
+      })}
+    </>
+  );
+}
+
 export default function ChatAssistant({ 
   messages, onSendMessage, isLoading, onViewRestaurant, onAcceptPlan, onModifyPlan,
   onDragStart, preferences, filters, hasConversationContext = false
@@ -88,13 +123,14 @@ export default function ChatAssistant({
                 ? 'bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-lg' 
                 : 'bg-white shadow-md border border-gray-100'
             }`}>
-              <p className={`text-sm whitespace-pre-wrap leading-relaxed ${
+              {/* ⭐ UPDATED: Render markdown */}
+              <div className={`text-sm leading-relaxed ${
                 msg.role === 'user' ? 'text-white' : 'text-gray-800'
               }`}>
-                {msg.content}
-              </p>
+                {renderMarkdown(msg.content)}
+              </div>
               
-              {/* Restaurant Cards - ⭐ FIXED: Added draggable props */}
+              {/* Restaurant Cards */}
               {msg.restaurants && msg.restaurants.length > 0 && (
                 <div className="mt-3 space-y-2">
                   {msg.restaurants.map((r, i) => (
