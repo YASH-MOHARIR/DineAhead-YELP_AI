@@ -138,6 +138,7 @@ export default function App() {
           plan={plan} 
           filters={filters} 
           onBack={() => setShowSummary(false)}
+          onEdit={() => setShowSummary(false)}
           onSave={handleSavePlan}
           onViewRestaurant={setViewingRestaurant}
         />

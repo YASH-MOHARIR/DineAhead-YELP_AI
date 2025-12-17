@@ -19,7 +19,6 @@ export default function PlanSummary({ plan, filters, onBack, onEdit, onSave, onV
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [planName, setPlanName] = useState('');
   const [saved, setSaved] = useState(false);
-  const [selectedWeek, setSelectedWeek] = useState<Date>(getNextMonday());
   const [expandedDay, setExpandedDay] = useState<DayOfWeek | null>('monday');
 
   // Calculate totals
@@ -274,7 +273,7 @@ export default function PlanSummary({ plan, filters, onBack, onEdit, onSave, onV
 
         {/* Calendar Export */}
         <button 
-          onClick={() => downloadCalendar(plan, selectedWeek)}
+          onClick={() => downloadCalendar(plan, getNextMonday())}
           className="w-full bg-gradient-to-r from-orange-500 to-rose-500 text-white p-4 rounded-xl 
                      font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2
                      hover:-translate-y-0.5"
