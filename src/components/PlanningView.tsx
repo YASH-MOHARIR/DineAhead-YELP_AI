@@ -1,10 +1,8 @@
 // components/PlanningView.tsx
 import { useState, type DragEvent } from 'react';
 import type { WeeklyPlanType, UserPreferences, Filters, ChatMessage, Restaurant, DayOfWeek, MealTime } from '../types';
-import { createEmptyWeek } from '../types';
-import { DAYS, MEAL_TIMES, DAY_LABELS, MEAL_ICONS, MEAL_PRICE_TARGETS } from '../constants';
+import { DAYS, DAY_LABELS, MEAL_ICONS, MEAL_PRICE_TARGETS } from '../constants';
 import { searchRestaurants, transformYelpBusiness } from '../utils/api';
-import { getMatchScore } from '../utils/matching';
 import ChatAssistant from './ChatAssistant';
 import WeeklyPlanDisplay from './WeeklyPlanDisplay';
 import RestaurantDetailModal from './RestaurantDetailModal';
@@ -17,21 +15,6 @@ interface PlanningViewProps {
   onBack: () => void;
   onFinish: () => void;
   hasPlan: boolean;
-}
-
-function buildMealQuery(meal: MealTime, preferences: UserPreferences, filters: Filters): string {
-  const target = MEAL_PRICE_TARGETS[meal];
-  const mealDescriptions: Record<MealTime, string> = {
-    breakfast: 'breakfast spots, cafes, brunch places',
-    lunch: 'lunch restaurants, casual dining',
-    dinner: 'dinner restaurants, evening dining'
-  };
-  
-  let query = `Find ${mealDescriptions[meal]} in ${filters.location}`;
-  if (preferences.dietary) query += `. I'm ${preferences.dietary}`;
-  if (preferences.cuisineLikes.length) query += `. I like ${preferences.cuisineLikes.slice(0, 2).join(' and ')}`;
-  
-  return query;
 }
 
 // ⭐ ENHANCED: Include ALL user details in queries

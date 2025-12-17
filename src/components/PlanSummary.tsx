@@ -2,10 +2,10 @@
 import { useState } from 'react';
 import type { WeeklyPlanType, Filters, Restaurant, DayOfWeek } from '../types';
 import { DAYS, MEAL_TIMES, MEAL_ICONS, MEAL_LABELS } from '../constants';
-import { exportToCalendar, exportToPDF } from '../utils/calendar';
+// import { exportToCalendar } from '../utils/calendar';
 import { 
-  ArrowLeft, Save, Share2, Download, Calendar, ChevronDown, ChevronUp,
-  MapPin, DollarSign, Star, Link2, Image, Check
+  ArrowLeft, Save, Share2,  Calendar, ChevronDown, ChevronUp,
+  MapPin, DollarSign, Star, Link2,  Check
 } from 'lucide-react';
 
 interface PlanSummaryProps {
