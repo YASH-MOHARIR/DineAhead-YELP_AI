@@ -39,16 +39,30 @@ export default function Preferences({ preferences, setPreferences, onNext, onBac
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-2xl mx-auto">
-        <button onClick={onBack} className="text-gray-500 mb-4 hover:text-gray-700 flex items-center gap-2">
+    <div className="min-h-screen bg-gradient-to-br from-orange-100 via-rose-50 to-purple-100 p-6">
+      {/* Animated background blobs */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-orange-300/30 rounded-full blur-3xl animate-pulse-soft"></div>
+        <div className="absolute top-1/2 -left-40 w-80 h-80 bg-rose-300/30 rounded-full blur-3xl animate-pulse-soft delay-300"></div>
+        <div className="absolute -bottom-40 right-1/3 w-72 h-72 bg-purple-300/30 rounded-full blur-3xl animate-pulse-soft delay-500"></div>
+      </div>
+
+      <div className="max-w-2xl mx-auto relative">
+        <button 
+          onClick={onBack} 
+          className="glass px-4 py-2 rounded-full text-gray-600 hover:text-gray-800 
+                     hover-lift transition-all flex items-center gap-2 mb-4 animate-fade-in-down"
+        >
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Your Preferences</h1>
-        <p className="text-gray-600 mb-8">Tell us about your dietary needs and taste</p>
+
+        <div className="mb-8 animate-fade-in-down">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Your Preferences</h1>
+          <p className="text-gray-600">Tell us about your dietary needs and taste</p>
+        </div>
 
         {/* Dietary Preference */}
-        <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
+        <div className="glass rounded-2xl p-6 shadow-lg mb-6 animate-fade-in-up">
           <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
             <Utensils className="w-5 h-5 text-orange-500" /> Dietary Preference
           </h2>
@@ -60,20 +74,21 @@ export default function Preferences({ preferences, setPreferences, onNext, onBac
                   ...preferences, 
                   dietary: preferences.dietary === opt.value ? null : opt.value 
                 })}
-                className={`p-3 rounded-lg border-2 text-left transition-all ${
+                className={`p-4 rounded-xl text-left transition-all hover-lift ${
                   preferences.dietary === opt.value 
-                    ? 'border-orange-500 bg-orange-50 text-orange-700' 
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-lg' 
+                    : 'glass-dark hover:bg-white/50 text-gray-700'
                 }`}
               >
-                {opt.label}
+                <div className="text-2xl mb-1">{opt.emoji}</div>
+                <div className="font-medium text-sm">{opt.label.replace(/\s+\S+$/, '')}</div>
               </button>
             ))}
           </div>
         </div>
 
         {/* Allergens */}
-        <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
+        <div className="glass rounded-2xl p-6 shadow-lg mb-6 animate-fade-in-up delay-100">
           <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-orange-500" /> Allergens to Avoid
           </h2>
@@ -82,20 +97,25 @@ export default function Preferences({ preferences, setPreferences, onNext, onBac
               <button 
                 key={a} 
                 onClick={() => toggleAllergen(a)}
-                className={`px-4 py-2 rounded-full text-sm transition-all ${
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all hover-lift ${
                   preferences.allergens.includes(a) 
-                    ? 'bg-red-100 text-red-700 border-2 border-red-300' 
-                    : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
+                    ? 'bg-red-500 text-white shadow-md' 
+                    : 'glass-dark text-gray-600 hover:bg-white/50'
                 }`}
               >
                 {a}
               </button>
             ))}
           </div>
+          {preferences.allergens.length > 0 && (
+            <p className="text-xs text-gray-500 mt-3">
+              Selected {preferences.allergens.length} allergen{preferences.allergens.length !== 1 ? 's' : ''}
+            </p>
+          )}
         </div>
 
         {/* Cuisine Preferences */}
-        <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
+        <div className="glass rounded-2xl p-6 shadow-lg mb-6 animate-fade-in-up delay-200">
           <h2 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
             <Heart className="w-5 h-5 text-orange-500" /> Cuisine Preferences
           </h2>
@@ -106,16 +126,17 @@ export default function Preferences({ preferences, setPreferences, onNext, onBac
             {CUISINE_OPTIONS.map(c => {
               const isL = preferences.cuisineLikes.includes(c);
               const isD = preferences.cuisineDislikes.includes(c);
-              let cn = 'px-4 py-2 rounded-full text-sm transition-all flex items-center gap-1.5 ';
-              if (isL) cn += 'bg-green-100 text-green-700 border-2 border-green-300';
-              else if (isD) cn += 'bg-red-100 text-red-700 border-2 border-red-300';
-              else cn += 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200';
+              
+              let className = 'px-4 py-2 rounded-full text-sm font-medium transition-all hover-lift flex items-center gap-1.5 ';
+              if (isL) className += 'bg-green-500 text-white shadow-md';
+              else if (isD) className += 'bg-red-500 text-white shadow-md';
+              else className += 'glass-dark text-gray-600 hover:bg-white/50';
               
               return (
                 <button 
                   key={c} 
                   onClick={() => toggleCuisine(c, isL ? 'dislike' : 'like')} 
-                  className={cn}
+                  className={className}
                 >
                   {isL && <ThumbsUp className="w-3.5 h-3.5" />}
                   {isD && <ThumbsDown className="w-3.5 h-3.5" />}
@@ -124,13 +145,18 @@ export default function Preferences({ preferences, setPreferences, onNext, onBac
               );
             })}
           </div>
+          {(preferences.cuisineLikes.length > 0 || preferences.cuisineDislikes.length > 0) && (
+            <p className="text-xs text-gray-500 mt-3">
+              {preferences.cuisineLikes.length} liked, {preferences.cuisineDislikes.length} disliked
+            </p>
+          )}
         </div>
 
         <button 
           onClick={onNext} 
           className="w-full bg-gradient-to-r from-orange-500 to-rose-500 text-white py-4 rounded-xl 
                      font-semibold hover:from-orange-600 hover:to-rose-600 transition-all shadow-lg 
-                     hover:shadow-xl flex items-center justify-center gap-2"
+                     hover:shadow-xl hover-lift flex items-center justify-center gap-2 animate-fade-in-up delay-300"
         >
           Continue to Budget
           <ArrowRight className="w-5 h-5" />

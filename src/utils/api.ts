@@ -15,6 +15,7 @@ export interface ChatResponse {
   types?: string[];
   entities?: any;
   chat_id?: string;
+  businesses?: any[];
 }
 
 export interface UserContext {
@@ -23,14 +24,21 @@ export interface UserContext {
   longitude?: number;
 }
 
+// ⭐ ENHANCED: Request comprehensive review data
 export async function searchRestaurants(
   query: string, 
   location: string, 
   chatId?: string,
   userContext?: UserContext
 ): Promise<ChatResponse> {
+  // ⭐ ENHANCED: Explicitly request detailed reviews
+  let enhancedQuery = query;
+  if (!query.toLowerCase().includes('review')) {
+    enhancedQuery += '. Show detailed reviews and ratings';
+  }
+  
   const body: Record<string, any> = { 
-    query,
+    query: enhancedQuery,
     location
   };
   
@@ -47,7 +55,7 @@ export async function searchRestaurants(
     body.user_context = userContext;
   }
 
-  console.log('📤 Request body:', JSON.stringify(body, null, 2));
+  console.log('📤 Enhanced request query:', enhancedQuery);
 
   const response = await fetch('/api/yelp/ai/chat/v2', {
     method: 'POST',
@@ -71,8 +79,11 @@ export async function searchRestaurants(
   return data;
 }
 
-function parseReviewSnippets(contextualInfo: any): ReviewSnippet[] {
+// ⭐ ENHANCED: Extract more review data
+function parseReviewSnippets(contextualInfo: any, business: any): ReviewSnippet[] {
   const snippets: ReviewSnippet[] = [];
+  
+  // Extract from contextual_info
   if (contextualInfo?.review_snippet) {
     snippets.push({ 
       text: contextualInfo.review_snippet
@@ -81,18 +92,39 @@ function parseReviewSnippets(contextualInfo: any): ReviewSnippet[] {
       rating: null
     });
   }
+  
+  // Extract from review_snippets array
   if (contextualInfo?.review_snippets?.length) {
     contextualInfo.review_snippets.forEach((s: any) => {
       const text = (s.comment || s.text || '')
         .replace(/\[\[HIGHLIGHT\]\]/g, '')
         .replace(/\[\[ENDHIGHLIGHT\]\]/g, '');
-      if (text) snippets.push({ 
-        text, 
-        rating: typeof s.rating === 'number' ? s.rating : null
-      });
+      if (text) {
+        snippets.push({ 
+          text, 
+          rating: typeof s.rating === 'number' ? s.rating : null
+        });
+      }
     });
   }
-  return snippets.slice(0, 5);
+  
+  // ⭐ NEW: Extract from reviews array if available
+  if (business.reviews?.length) {
+    business.reviews.forEach((r: any) => {
+      if (r.text || r.comment) {
+        snippets.push({
+          text: (r.text || r.comment || '')
+            .replace(/\[\[HIGHLIGHT\]\]/g, '')
+            .replace(/\[\[ENDHIGHLIGHT\]\]/g, ''),
+          rating: typeof r.rating === 'number' ? r.rating : null
+        });
+      }
+    });
+  }
+  
+  // Remove duplicates and return up to 50 reviews
+  const unique = Array.from(new Map(snippets.map(s => [s.text, s])).values());
+  return unique.slice(0, 50);
 }
 
 function extractPhotos(business: any): string[] {
@@ -157,7 +189,7 @@ export function transformYelpBusiness(business: any): Restaurant {
       medium: business.summaries?.medium || '',
       long: business.summaries?.long || '',
     },
-    reviewSnippets: parseReviewSnippets(business.contextual_info),
+    reviewSnippets: parseReviewSnippets(business.contextual_info, business), // ⭐ PASS business object
     contextualSummary: business.contextual_info?.summary || '',
     photos: extractPhotos(business),
     phone: business.phone || business.display_phone || '',

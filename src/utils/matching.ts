@@ -75,11 +75,12 @@ export function getMatchScore(
   return Math.round((matched / Math.max(indicators.length, 1)) * 100);
 }
 
-// Group reviews by rating for display
+// ⭐ ENHANCED: Group reviews by rating with proportional sampling
 export function groupReviewsByRating(snippets: ReviewSnippet[]): { 
   rating: number; 
   reviews: ReviewSnippet[]; 
-  percentage: number 
+  percentage: number;
+  sampleSize: number;
 }[] | null {
   const withRatings = snippets.filter(s => s.rating !== null);
   if (withRatings.length === 0) return null;
@@ -91,11 +92,48 @@ export function groupReviewsByRating(snippets: ReviewSnippet[]): {
   });
   
   const total = withRatings.length || 1;
+  
+  // Calculate proportional sample sizes (target: 50 reviews if available)
+  const targetSampleSize = Math.min(50, total);
+  
   return [5, 4, 3, 2, 1]
-    .map(rating => ({ 
-      rating, 
-      reviews: groups[rating], 
-      percentage: Math.round((groups[rating].length / total) * 100) 
-    }))
+    .map(rating => {
+      const reviews = groups[rating];
+      const percentage = Math.round((reviews.length / total) * 100);
+      // Proportional sampling: if this rating has 50% of reviews, take 50% of target sample
+      const sampleSize = Math.round((reviews.length / total) * targetSampleSize);
+      
+      return { 
+        rating, 
+        reviews: reviews.slice(0, sampleSize), // Take proportional sample
+        percentage,
+        sampleSize
+      };
+    })
     .filter(g => g.reviews.length > 0);
+}
+
+// ⭐ NEW: Get review summary statistics
+export function getReviewSummary(snippets: ReviewSnippet[]): {
+  averageRating: number;
+  totalReviews: number;
+  distribution: Record<number, number>;
+} | null {
+  const withRatings = snippets.filter(s => s.rating !== null);
+  if (withRatings.length === 0) return null;
+  
+  const distribution: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  let sum = 0;
+  
+  withRatings.forEach(s => {
+    const r = Math.min(5, Math.max(1, Math.round(s.rating!)));
+    distribution[r]++;
+    sum += s.rating!;
+  });
+  
+  return {
+    averageRating: sum / withRatings.length,
+    totalReviews: withRatings.length,
+    distribution
+  };
 }

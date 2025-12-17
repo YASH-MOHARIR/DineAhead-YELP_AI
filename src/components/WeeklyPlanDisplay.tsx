@@ -1,158 +1,246 @@
 // components/WeeklyPlanDisplay.tsx
-import type { DragEvent } from 'react';
-import type { WeeklyPlanType, DayOfWeek, Restaurant } from '../types';
-import { DAYS } from '../constants';
-import RestaurantCard from './RestaurantCard';
-import { Calendar, Wallet, X, GripVertical, Check, ArrowRight, Lightbulb } from 'lucide-react';
+import { useState, DragEvent } from 'react';
+import type { WeeklyPlanType, DayOfWeek, MealTime, Restaurant } from '../types';
+import { DAYS, MEAL_TIMES, DAY_LABELS, MEAL_ICONS } from '../constants';
 
 interface WeeklyPlanDisplayProps {
   plan: WeeklyPlanType;
   budget: number;
-  onRemove: (day: DayOfWeek) => void;
-  onDrop: (day: DayOfWeek, restaurant: Restaurant) => void;
+  onRemove: (day: DayOfWeek, meal: MealTime) => void;
+  onDrop: (day: DayOfWeek, meal: MealTime, restaurant: Restaurant) => void;
   onViewRestaurant: (restaurant: Restaurant) => void;
-  dragOverDay: DayOfWeek | null;
-  setDragOverDay: (day: DayOfWeek | null) => void;
   onFinish: () => void;
   hasPlan: boolean;
 }
 
 export default function WeeklyPlanDisplay({ 
-  plan, budget, onRemove, onDrop, onViewRestaurant, dragOverDay, setDragOverDay, onFinish, hasPlan
+  plan, budget, onRemove, onDrop, onViewRestaurant, onFinish, hasPlan
 }: WeeklyPlanDisplayProps) {
-  const totalSpent = DAYS.reduce((sum, day) => sum + (plan[day]?.restaurant.estimatedCost || 0), 0);
-  const remaining = budget - totalSpent;
-  const filledDays = DAYS.filter(d => plan[d]).length;
-  const progressPercent = Math.min((totalSpent / budget) * 100, 100);
+  const [expandedDay, setExpandedDay] = useState<DayOfWeek>('monday');
+  const [dragOverSlot, setDragOverSlot] = useState<{ day: DayOfWeek; meal: MealTime } | null>(null);
 
-  const handleDragOver = (e: DragEvent<HTMLDivElement>, day: DayOfWeek) => {
-    e.preventDefault();
-    setDragOverDay(day);
+  // Calculate totals
+  const calculateDayTotal = (day: DayOfWeek): number => {
+    const dayPlan = plan[day];
+    return (dayPlan.breakfast?.restaurant.estimatedCost || 0) +
+           (dayPlan.lunch?.restaurant.estimatedCost || 0) +
+           (dayPlan.dinner?.restaurant.estimatedCost || 0);
   };
 
-  const handleDrop = (e: DragEvent<HTMLDivElement>, day: DayOfWeek) => {
+  const calculateDayMeals = (day: DayOfWeek): number => {
+    const dayPlan = plan[day];
+    return (dayPlan.breakfast ? 1 : 0) + (dayPlan.lunch ? 1 : 0) + (dayPlan.dinner ? 1 : 0);
+  };
+
+  const totalSpent = DAYS.reduce((sum, day) => sum + calculateDayTotal(day), 0);
+  const totalMeals = DAYS.reduce((sum, day) => sum + calculateDayMeals(day), 0);
+  const remaining = budget - totalSpent;
+  const progressPercent = Math.min((totalSpent / budget) * 100, 100);
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>, day: DayOfWeek, meal: MealTime) => {
     e.preventDefault();
-    setDragOverDay(null);
+    setDragOverSlot({ day, meal });
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>, day: DayOfWeek, meal: MealTime) => {
+    e.preventDefault();
+    setDragOverSlot(null);
     const data = e.dataTransfer.getData('application/json');
-    if (data) onDrop(day, JSON.parse(data));
+    if (data) {
+      const restaurant: Restaurant = JSON.parse(data);
+      onDrop(day, meal, restaurant);
+    }
   };
 
   return (
-    <div className="glass rounded-2xl shadow-xl overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-orange-500 to-rose-500 p-4 text-white">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center mb-2">
           <h3 className="font-bold text-lg flex items-center gap-2">
-            <Calendar className="w-5 h-5 animate-float" /> Your Week
+            <span className="animate-float">📅</span> Your Week
           </h3>
-          <span className="glass-dark px-3 py-1 rounded-full text-sm">
-            {filledDays}/5 days
+          <span className="bg-white/20 px-3 py-1 rounded-full text-sm backdrop-blur-sm">
+            {totalMeals}/21 meals
           </span>
         </div>
-      </div>
-
-      <div className="p-4">
-        {/* Budget Progress */}
-        <div className="mb-4 animate-fade-in">
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-gray-600 font-medium flex items-center gap-1.5">
-              <Wallet className="w-4 h-4" /> Budget
-            </span>
-            <span className={`font-bold ${remaining >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-              ${remaining >= 0 ? remaining : Math.abs(remaining)} {remaining >= 0 ? 'left' : 'over'}
+        
+        {/* Budget Bar */}
+        <div className="mt-3">
+          <div className="flex justify-between text-sm mb-1">
+            <span className="opacity-90">Weekly Budget</span>
+            <span className="font-bold">
+              ${totalSpent} / ${budget}
+              <span className={`ml-2 ${remaining >= 0 ? 'text-green-200' : 'text-red-200'}`}>
+                ({remaining >= 0 ? `$${remaining} left` : `$${Math.abs(remaining)} over`})
+              </span>
             </span>
           </div>
-          <div className="h-3 bg-gray-200/50 rounded-full overflow-hidden backdrop-blur-sm">
+          <div className="h-2 bg-white/20 rounded-full overflow-hidden">
             <div 
-              className={`h-full rounded-full transition-all duration-500 ease-out ${
-                remaining >= 0 
-                  ? 'bg-gradient-to-r from-orange-400 to-rose-400' 
-                  : 'bg-gradient-to-r from-red-400 to-red-500'
+              className={`h-full rounded-full transition-all duration-500 ${
+                remaining >= 0 ? 'bg-white' : 'bg-red-300'
               }`}
               style={{ width: `${progressPercent}%` }}
-            >
-              <div className="h-full w-full animate-shimmer"></div>
-            </div>
-          </div>
-          <div className="flex justify-between text-xs text-gray-400 mt-1">
-            <span>$0</span>
-            <span>${budget}</span>
+            />
           </div>
         </div>
+      </div>
 
-        {/* Days */}
-        <div className="space-y-2">
-          {DAYS.map((day, index) => (
-            <div 
+      {/* Day Tabs - With Labels Above */}
+      <div className="flex border-b overflow-x-auto scrollbar-hide bg-white">
+        {DAYS.map(day => {
+          const dayMeals = calculateDayMeals(day);
+          const isExpanded = expandedDay === day;
+          return (
+            <button
               key={day}
-              onDragOver={(e) => handleDragOver(e, day)}
-              onDragLeave={() => setDragOverDay(null)}
-              onDrop={(e) => handleDrop(e, day)}
-              className={`p-3 rounded-xl transition-all duration-300 animate-fade-in-up border-2 ${
-                dragOverDay === day 
-                  ? 'border-orange-400 bg-orange-100/50 scale-[1.02] shadow-lg' 
-                  : 'border-transparent bg-white/50 hover:bg-white/70'
+              onClick={() => setExpandedDay(day)}
+              className={`flex-1 min-w-[60px] py-2.5 px-1 text-center transition-all relative flex flex-col items-center gap-1 ${
+                isExpanded 
+                  ? 'bg-orange-50 text-orange-600' 
+                  : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
               }`}
-              style={{ animationDelay: `${index * 75}ms` }}
             >
-              <div className="flex items-center gap-3">
-                <span className={`font-semibold capitalize w-10 text-sm ${
-                  plan[day] ? 'text-orange-600' : 'text-gray-400'
-                }`}>
-                  {day.slice(0, 3)}
-                </span>
-                
-                {plan[day] ? (
-                  <div className="flex-1 flex items-center gap-2 animate-scale-in">
-                    <RestaurantCard
-                      restaurant={plan[day]!.restaurant}
-                      size="mini"
-                      onClick={() => onViewRestaurant(plan[day]!.restaurant)}
-                      className="flex-1"
-                    />
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); onRemove(day); }} 
-                      className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-all hover-scale"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex-1 flex items-center gap-2 text-gray-400 text-sm">
-                    <span className="flex-1">
-                      {dragOverDay === day ? (
-                        <span className="text-orange-500 font-medium animate-pulse">↓ Drop here!</span>
-                      ) : (
-                        'Drop a restaurant'
-                      )}
-                    </span>
-                    <GripVertical className="w-4 h-4 opacity-50" />
-                  </div>
-                )}
+              {/* Day Label */}
+              <span className={`text-[10px] font-bold uppercase tracking-wide ${
+                isExpanded ? 'text-orange-600' : 'text-gray-400'
+              }`}>
+                {DAY_LABELS[day].short}
+              </span>
+              
+              {/* Progress dots */}
+              <div className="flex justify-center gap-0.5">
+                {MEAL_TIMES.map(meal => (
+                  <div 
+                    key={meal}
+                    className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                      plan[day][meal] 
+                        ? isExpanded ? 'bg-orange-500' : 'bg-orange-400'
+                        : 'bg-gray-200'
+                    }`}
+                  />
+                ))}
               </div>
-            </div>
-          ))}
+              
+              {/* Active indicator */}
+              {isExpanded && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Expanded Day Content */}
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h4 className="font-semibold text-gray-800 text-lg">
+              {DAY_LABELS[expandedDay].full}
+            </h4>
+            <p className="text-xs text-gray-500 uppercase">{DAY_LABELS[expandedDay].short}</p>
+          </div>
+          <span className="text-sm text-gray-500">
+            ${calculateDayTotal(expandedDay)} today
+          </span>
         </div>
 
-        {/* Tip */}
-        <p className="text-xs text-gray-400 mt-4 text-center animate-fade-in delay-500 flex items-center justify-center gap-1.5">
-          <Lightbulb className="w-3.5 h-3.5" /> Drag restaurants from chat to add them
-        </p>
+        {/* Meal Slots */}
+        <div className="space-y-2">
+          {MEAL_TIMES.map((meal, index) => {
+            const mealSlot = plan[expandedDay][meal];
+            const isDragOver = dragOverSlot?.day === expandedDay && dragOverSlot?.meal === meal;
+            
+            return (
+              <div
+                key={meal}
+                onDragOver={(e) => handleDragOver(e, expandedDay, meal)}
+                onDragLeave={() => setDragOverSlot(null)}
+                onDrop={(e) => handleDrop(e, expandedDay, meal)}
+                className={`p-3 rounded-xl transition-all duration-200 border-2 animate-fade-in-up ${
+                  isDragOver
+                    ? 'border-orange-400 bg-orange-50 scale-[1.02]'
+                    : mealSlot
+                    ? 'border-transparent bg-gray-50 hover:bg-gray-100'
+                    : 'border-dashed border-gray-200 bg-gray-50/50 hover:border-orange-300'
+                }`}
+                style={{ animationDelay: `${index * 75}ms` }}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-lg w-8">{MEAL_ICONS[meal]}</span>
+                  <span className={`font-medium capitalize w-16 text-sm ${
+                    mealSlot ? 'text-orange-600' : 'text-gray-400'
+                  }`}>
+                    {meal}
+                  </span>
+                  
+                  {mealSlot ? (
+                    <div className="flex-1 flex items-center gap-2">
+                      <img 
+                        src={mealSlot.restaurant.imageUrl}
+                        alt={mealSlot.restaurant.name}
+                        className="w-10 h-10 rounded-lg object-cover cursor-pointer hover:ring-2 hover:ring-orange-400 transition-all"
+                        onClick={() => onViewRestaurant(mealSlot.restaurant)}
+                        onError={(e) => { e.currentTarget.src = `https://picsum.photos/seed/${mealSlot.restaurant.id}/100/100`; }}
+                      />
+                      <div 
+                        className="flex-1 min-w-0 cursor-pointer"
+                        onClick={() => onViewRestaurant(mealSlot.restaurant)}
+                      >
+                        <p className="font-medium text-gray-800 text-sm truncate hover:text-orange-600 transition-colors">
+                          {mealSlot.restaurant.name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {mealSlot.restaurant.priceLevel} • ${mealSlot.restaurant.estimatedCost}
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => onRemove(expandedDay, meal)}
+                        className="text-gray-400 hover:text-red-500 p-1 hover:bg-red-50 rounded-full transition-all"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex-1 text-gray-400 text-sm">
+                      {isDragOver ? (
+                        <span className="text-orange-500 font-medium animate-pulse">
+                          Drop here!
+                        </span>
+                      ) : (
+                        <span>Drop a restaurant or ask AI</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
-        {/* Finish Button */}
-        {hasPlan && (
+        {/* Quick Tips */}
+        <div className="mt-4 p-3 bg-gradient-to-r from-orange-50 to-rose-50 rounded-xl">
+          <p className="text-xs text-gray-600">
+            💡 <strong>Tip:</strong> Ask the AI "Plan {DAY_LABELS[expandedDay].full}'s meals" or drag restaurants from chat
+          </p>
+        </div>
+      </div>
+
+      {/* Finish Button */}
+      {hasPlan && (
+        <div className="p-4 border-t bg-gray-50">
           <button 
             onClick={onFinish}
-            className="w-full mt-4 bg-gradient-to-r from-orange-500 to-rose-500 text-white py-3 rounded-xl font-semibold 
-                       hover:from-orange-600 hover:to-rose-600 transition-all shadow-lg hover:shadow-xl 
-                       hover-lift animate-fade-in-up delay-300 flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-orange-500 to-rose-500 text-white py-3 rounded-xl 
+                       font-semibold hover:from-orange-600 hover:to-rose-600 transition-all 
+                       shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2"
           >
-            <Check className="w-5 h-5" />
-            <span>Finish Plan</span>
-            <ArrowRight className="w-4 h-4 opacity-75" />
+            <span>✓</span>
+            <span>Review & Finish Plan</span>
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
