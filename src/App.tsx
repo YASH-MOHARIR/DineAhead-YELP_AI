@@ -46,11 +46,6 @@ export default function App() {
     }, 0);
   }, 0);
 
-  // Count planned meals
-  const plannedMeals = DAYS.reduce((sum, d) => {
-    return sum + MEAL_TIMES.filter(m => plan[d][m] !== null).length;
-  }, 0);
-
   // Save plan handler - FIXED to show saved plans after save
   const handleSavePlan = (name: string) => {
     const savedPlan: SavedPlan = {
@@ -143,7 +138,6 @@ export default function App() {
           plan={plan} 
           filters={filters} 
           onBack={() => setShowSummary(false)}
-          onEdit={() => setShowSummary(false)}
           onSave={handleSavePlan}
           onViewRestaurant={setViewingRestaurant}
         />
