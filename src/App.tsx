@@ -125,8 +125,10 @@ export default function App() {
         <PlanningView 
           plan={plan} 
           setPlan={setPlan} 
-          preferences={preferences} 
-          filters={filters} 
+          preferences={preferences}
+          setPreferences={setPreferences}
+          filters={filters}
+          setFilters={setFilters}
           onBack={() => setStep('filters')}
           onFinish={() => setShowSummary(true)}
           hasPlan={hasPlan}

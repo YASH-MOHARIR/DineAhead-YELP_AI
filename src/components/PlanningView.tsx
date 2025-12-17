@@ -11,7 +11,9 @@ interface PlanningViewProps {
   plan: WeeklyPlanType;
   setPlan: (p: WeeklyPlanType) => void;
   preferences: UserPreferences;
+  setPreferences: (p: UserPreferences) => void;
   filters: Filters;
+  setFilters: (f: Filters) => void;
   onBack: () => void;
   onFinish: () => void;
   hasPlan: boolean;
@@ -114,7 +116,7 @@ function buildFullQuery(userMessage: string, preferences: UserPreferences, filte
   return query;
 }
 
-export default function PlanningView({ plan, setPlan, preferences, filters, onBack, onFinish, hasPlan }: PlanningViewProps) {
+export default function PlanningView({ plan, setPlan, preferences, setPreferences, filters, setFilters, onBack, onFinish, hasPlan }: PlanningViewProps) {
   const avgPerMeal = Math.round(filters.budget / 21);
   
   const [messages, setMessages] = useState<ChatMessage[]>([{
@@ -388,6 +390,10 @@ ${preferences.cuisineLikes.length ? `✓ **Favorites:** ${preferences.cuisineLik
                 onViewRestaurant={setViewingRestaurant}
                 onFinish={onFinish} 
                 hasPlan={hasPlan}
+                preferences={preferences}
+                filters={filters}
+                onUpdatePreferences={setPreferences}
+                onUpdateFilters={setFilters}
               />
             </div>
           </div>
