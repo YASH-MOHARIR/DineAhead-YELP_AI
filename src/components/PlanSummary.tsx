@@ -1,6 +1,6 @@
 // components/PlanSummary.tsx
 import { useState } from 'react';
-import type { WeeklyPlanType, Filters, DayOfWeek, MealTime, Restaurant } from '../types';
+import type { WeeklyPlanType, Filters, DayOfWeek, Restaurant } from '../types';
 import { DAYS, MEAL_TIMES, DAY_LABELS, MEAL_ICONS } from '../constants';
 import { getNextMonday, downloadCalendar } from '../utils/calendar';
 
