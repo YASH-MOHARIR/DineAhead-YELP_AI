@@ -1,6 +1,6 @@
 // utils/api.ts - Yelp API with proper multi-turn conversation support
 import type { Restaurant, ReviewSnippet } from '../types';
-import { API_KEY, PRICE_MAP } from '../constants';
+import { PRICE_MAP } from '../constants';
 
 export interface ChatResponse {
   response: {
@@ -57,10 +57,12 @@ export async function searchRestaurants(
 
   console.log('📤 Enhanced request query:', enhancedQuery);
 
-  const response = await fetch('/api/yelp/ai/chat/v2', {
+  // ⭐ UPDATED: Call Vercel API route instead of direct proxy
+  const apiUrl = '/api/yelp';
+  
+  const response = await fetch(apiUrl, {
     method: 'POST',
     headers: { 
-      'Authorization': `Bearer ${API_KEY}`, 
       'Content-Type': 'application/json' 
     },
     body: JSON.stringify(body),
